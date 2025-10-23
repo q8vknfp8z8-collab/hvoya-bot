@@ -220,9 +220,9 @@ async def send_single_or_file(update: Update, text: str, fname: str, user_id: in
 
 def get_greeting():
     hour = datetime.now().hour
-    if 5 <= hour < 10:
+    if 7 <= hour < 12:
         return "Доброго ранку!"
-    elif 10 <= hour < 18:
+    elif 12 <= hour < 20:
         return "Добрий день!"
     else:
         return "Добрий вечір!"
@@ -400,3 +400,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
