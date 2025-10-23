@@ -395,7 +395,7 @@ def main():
 )
 
 
-    app = Application.builder().token(TOKEN).request(request).build()
+    app = Application.builder().token(TOKEN).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, on_text))
 
@@ -408,5 +408,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
