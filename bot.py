@@ -385,7 +385,15 @@ def main():
         raise RuntimeError("BOT_TOKEN не задано. Задай змінну оточення BOT_TOKEN з токеном від BotFather.")
 
     # HTTPXRequest з trust_env=False — ігноруємо системні proxy (вирішує проблему 503)
-    request = HTTPXRequest(timeout=30, trust_env=False, proxies=None)
+    request = HTTPXRequest(
+    connect_timeout=30,
+    read_timeout=30,
+    write_timeout=30,
+    pool_timeout=30,
+    trust_env=False,
+    proxies=None,
+)
+
 
     app = Application.builder().token(TOKEN).request(request).build()
     app.add_handler(CommandHandler("start", start))
@@ -400,4 +408,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
