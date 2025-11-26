@@ -218,14 +218,19 @@ async def send_single_or_file(update: Update, text: str, fname: str, user_id: in
         await update.message.reply_document(document=buf, filename=fname,
             caption="Повний текст (перевищено ліміт символів).", reply_markup=main_menu(user_id))
 
+from zoneinfo import ZoneInfo
+
 def get_greeting():
-    hour = datetime.now().hour
-    if 7 <= hour < 12:
+    kyiv_time = datetime.now(ZoneInfo("Europe/Kyiv"))
+    hour = kyiv_time.hour
+
+    if 5 <= hour < 10:
         return "Доброго ранку!"
-    elif 12 <= hour < 20:
+    elif 10 <= hour < 18:
         return "Добрий день!"
     else:
         return "Добрий вечір!"
+
 
 def build_client_draft(body: str, warning: str) -> str:
     greeting = get_greeting()
@@ -406,6 +411,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
