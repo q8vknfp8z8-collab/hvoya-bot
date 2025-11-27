@@ -6,7 +6,7 @@ from telegram.request import HTTPXRequest
 import logging
 
 # ------------------------------------------------------
-# TOKEN (вставлений як ти просив)
+# TOKEN
 # ------------------------------------------------------
 
 TOKEN = "7557465115:AAHtCuBW-voeMluoYQVRcIwvLtRixC0w28U"
@@ -26,7 +26,7 @@ META_FILE  = "access_meta.json"
 ACCESS_CODES = {
     "hb24": timedelta(hours=24),
     "hb14": timedelta(days=14),
-    "bot10": timedelta(minutes=10)
+    "bot10": timedelta(minutes=10),
 }
 
 BOT10_LIMIT = 3
@@ -38,20 +38,20 @@ CHECKOUT_TIME = "12:00"
 # JSON-функції
 # ------------------------------------------------------
 
-def _load_json(path):
+def _load_json(path: str):
     if os.path.exists(path):
         try:
             with open(path, "r", encoding="utf-8") as f:
                 return json.load(f)
-        except:
+        except Exception:
             return {}
     return {}
 
-def _save_json(path, data):
+def _save_json(path: str, data):
     with open(path, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
 
-def _get_bot10_uses():
+def _get_bot10_uses() -> int:
     return int(_load_json(META_FILE).get("bot10_uses", 0))
 
 def _inc_bot10_uses():
@@ -65,16 +65,16 @@ def has_access(user_id: int) -> bool:
 
     data = _load_json(ACCESS_FILE)
     exp = data.get(str(user_id))
-
     if not exp:
         return False
 
     try:
         if datetime.fromisoformat(exp) > datetime.now():
             return True
+        # термін вийшов — видаляємо
         del data[str(user_id)]
         _save_json(ACCESS_FILE, data)
-    except:
+    except Exception:
         pass
 
     return False
@@ -139,10 +139,10 @@ BTN_PAY_DEBT     = "В борг"
 BTN_PAY_OK       = "✅ Я оплатив"
 BTN_BACK         = "⬅️ Назад"
 
-def main_menu(user_id=None):
+def main_menu(user_id: int | None = None):
     keyboard = [
         [BTN_PAY],
-        [BTN_WORK, BTN_INFO]
+        [BTN_WORK, BTN_INFO],
     ]
     if user_id == ADMIN_ID:
         keyboard.append([BTN_GRANT])
@@ -157,34 +157,35 @@ def duration_menu():
 
 UA_MONTHS = {
     "січня":1,"лютого":2,"березня":3,"квітня":4,"травня":5,"червня":6,
-    "липня":7,"серпня":8,"вересня":9,"жовтня":10,"листопада":11,"грудня":12
+    "липня":7,"серпня":8,"вересня":9,"жовтня":10,"листопада":11,"грудня":12,
 }
 
-def parse_ua_date(s: str):
+def parse_ua_date(s: str) -> datetime | None:
     parts = s.strip().split()
     if len(parts) < 3:
         return None
     try:
-        day = int(re.sub(r"\D","", parts[0]))
+        day = int(re.sub(r"\D", "", parts[0]))
         month = UA_MONTHS.get(parts[1].lower())
-        year = int(re.sub(r"\D","", parts[2]))
+        year = int(re.sub(r"\D", "", parts[2]))
         if not month:
             return None
         return datetime(year, month, day)
-    except:
+    except Exception:
         return None
 
 def extract_dates(text: str):
     m = re.search(
-        r"(\d{1,2}\s+\w+\s+\d{4})\s*[–—-]\s*(\d{1,2}\s+\w+\s+\d{4})",
+        r"(\d{1,2}\s+\w+\s+\d{4})\s*[-–—]\s*(\d{1,2}\s+\w+\s+\d{4})",
         text,
-        flags=re.I
+        flags=re.I,
     )
     return (parse_ua_date(m.group(1)), parse_ua_date(m.group(2))) if m else (None, None)
 
 def extract_room_raw(text: str) -> str:
     m = re.search(r"Тип кімнати:\s*(.+)", text, flags=re.I)
     return m.group(1).strip() if m else ""
+
 def extract_adults(text: str) -> int:
     m = re.search(r"Дорослі гості:\s*(\d+)", text, flags=re.I)
     return int(m.group(1)) if m else 2
@@ -200,7 +201,7 @@ def extract_amount(text: str) -> float:
     raw = m.group(1).replace(" ", "").replace(",", ".")
     try:
         return float(raw)
-    except:
+    except Exception:
         return 0.0
 
 def format_uah(amount: float) -> str:
@@ -213,7 +214,7 @@ def extract_body_without_id(text: str) -> str:
 
     lines = []
     for line in text.splitlines():
-        if re.match(r"^\s*#\d+", line): 
+        if re.match(r"^\s*#\d+", line):
             continue
         if "Бронювання" in line or "✌️" in line:
             continue
@@ -222,7 +223,7 @@ def extract_body_without_id(text: str) -> str:
 
 NUM_WORDS = {
     1:"одного",2:"двох",3:"трьох",4:"чотирьох",
-    5:"п’яти",6:"шести",7:"семи",8:"восьми",9:"дев’яти",10:"десяти"
+    5:"п’яти",6:"шести",7:"семи",8:"восьми",9:"дев’яти",10:"десяти",
 }
 
 def guests_phrase(ad: int, kids: int) -> str:
@@ -245,8 +246,8 @@ def find_corpus(room_title: str) -> int:
         return 2
     return 1
 
-def pick_warning(room_title, d1, days_left):
-    warning_list = []
+def pick_warning(room_title: str, d1: datetime | None, days_left: int | None) -> str:
+    warning_list: list[str] = []
 
     key = _norm(room_title)
 
@@ -254,7 +255,7 @@ def pick_warning(room_title, d1, days_left):
     if key in {
         "SUPERIOR APARTMENT",
         "DELUXE APARTMENT",
-        "STANDART APARTMENT"
+        "STANDART APARTMENT",
     }:
         warning_list.append(
             "❗️Зверніть увагу, що Ви забронювали номер з виглядом на дорогу та активне будівництво, "
@@ -266,13 +267,15 @@ def pick_warning(room_title, d1, days_left):
         today = datetime.now().date()
         arrival = d1.date()
 
+        diff_days = (arrival - today).days
+
         # Менше ніж 3 дні → без передплати
-        if (arrival - today).days < 3:
+        if diff_days < 3:
             pass
         else:
             # З 1 грудня → якщо >10 днів до заїзду → 100%
             dec1 = datetime(today.year, 12, 1).date()
-            if today >= dec1 and (arrival - today).days > 10:
+            if today >= dec1 and diff_days > 10:
                 warning_list.append(
                     "❗️Зверніть увагу, на обраний Вами період бронювання "
                     "здійснюється тільки по передплаті 100% від загальної вартості номера."
@@ -299,7 +302,7 @@ def pick_warning(room_title, d1, days_left):
 # Привітання
 # ------------------------------------------------------
 
-def get_greeting():
+def get_greeting() -> str:
     hour = datetime.now().hour
     if 5 <= hour < 10:
         return "Доброго ранку!"
@@ -325,7 +328,7 @@ def build_client_draft(body: str, warning: str) -> str:
     return msg
 
 # ------------------------------------------------------
-# Друге повідомлення (оновлене, повне)
+# Друге повідомлення (повний текст)
 # ------------------------------------------------------
 
 def build_confirmation(room_title: str, corpus: int, ad: int, kids: int,
@@ -353,10 +356,31 @@ def build_confirmation(room_title: str, corpus: int, ad: int, kids: int,
         "без претензій на послуги, саме тому в надісланих рахунках не вказані.\n\n"
         "У вартість проживання входить:\n"
         "✅ сніданок, який проходить з 8:00 до 11:00 у форматі шведсько лінії;\n"
-        "✅ безлімітне користування СПА… (тут весь довгий текст без змін)\n"
+        "✅ безлімітне користування СПА комплексом з 09:00 до 21:00 для всіх гостей + нічне СПА з 21:00 до 01:00 для гостей віком від 16 р., "
+        "яке включає дорослий басейн 206 м. з різними видами гідромасажу, дитячий басейном 4*3 м., фінську, карпатську і римо-турецьку (хамам) "
+        "сауни, соляну кімнату, холодну купіль і гідромасажний басейном 53 м.;\n"
+        "✅ безлімітне користування спортивною залою;\n"
+        "✅ безкоштовні заняття по пілатесу, стрейчингу та барре-тренування з п'ятниці по неділю;\n"
+        "✅ безкоштовний паркінг: підземний або відкритий в 150 м. від готелю, попереднє бронювання не здійснюється, тому місце для паркування "
+        "надається на тому паркінгу, який буде доступний на момент поселення;\n"
+        "✅безкоштовний доступ до дитячої кімнати з аніматором 4 год. на день з 09:00 до 21:00, час провітрювання: 14:30-15:00 та 18:30-19:00 "
+        "(діти до 2.99 р. під наглядом батьків, під час провітрювання дитяча кімната не працює);\n"
+        "✅ безкоштовний доступ до зони з більярдом, настільним футболом  та аерохокеєм(можливі обмеження у часі роботи під час проведення конференцій);\n"
+        "✅ безкоштовний доступ до зони з ігровими приставками Sony PlayStation 5;\n"
+        "✅ кімната для зберігання лижного спорядження (лижна кімната) — безкоштовно для всіх гостей готелю, "
+        "обладнана сушками для черевиків.\n\n"
+        "Переглянути всі деталі про номер Ви зможете на нашому сайті: https://hotelhvoya.com/apartamenty/\n\n"
+        "Геолокація готелю: https://maps.app.goo.gl/RPzMNUiuoQKyekvSA\n\n"
+        "Додаткова інформація (додаткові послуги)\n"
+        "◼️ Проживання з тваринами - під повну відповідальність гостя (в т.ч. матеріальну) та  за додаткову оплату (вартість - 700 грн/ніч).\n\n"
+        "◼️ Паркінг у готелі безкоштовний.  Попередньо резервація паркомісця не здійснюється. Паркінг надається по факту заселення в залежності від наявних вільних паркомісць "
+        "(підземний або відкритий паркінг, або ж Паркінг 2 ТК \"Буковель\").\n"
+        "Всі інші додаткові послуги, які надає ТК «Буковель» у вартість проживання не входять.\n\n"
+        "HVOYA Apart-Hotel & SPA з повагою до Вас!"
     )
 
     return msg
+
 # ------------------------------------------------------
 # Відправлення довгих повідомлень
 # ------------------------------------------------------
@@ -366,7 +390,7 @@ async def send_single_or_file(update: Update, text: str, fname: str, user_id: in
         await update.message.reply_text(
             text,
             disable_web_page_preview=True,
-            reply_markup=main_menu(user_id)
+            reply_markup=main_menu(user_id),
         )
     else:
         buf = io.BytesIO(text.encode("utf-8"))
@@ -375,7 +399,7 @@ async def send_single_or_file(update: Update, text: str, fname: str, user_id: in
             document=buf,
             filename=fname,
             caption="Повний текст (перевищено ліміт повідомлення).",
-            reply_markup=main_menu(user_id)
+            reply_markup=main_menu(user_id),
         )
 
 # ------------------------------------------------------
@@ -407,7 +431,7 @@ async def on_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if uid == ADMIN_ID and context.user_data.get("grant_step") == "await_user_id":
         try:
             target_id = int(text)
-        except:
+        except Exception:
             await update.message.reply_text("⚠️ Введи числовий ID.", reply_markup=main_menu(uid))
             return
 
@@ -417,7 +441,7 @@ async def on_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         await update.message.reply_text(
             f"Готово. Доступ видано {target_id}.",
-            reply_markup=main_menu(uid)
+            reply_markup=main_menu(uid),
         )
         return
 
@@ -425,13 +449,15 @@ async def on_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if text in (
         BTN_PAY, BTN_WORK, BTN_INFO, BTN_GRANT,
         BTN_PAY_NOW, BTN_PAY_PARTS, BTN_PAY_DEBT,
-        BTN_PAY_OK, BTN_BACK
+        BTN_PAY_OK, BTN_BACK,
     ):
 
         if text == BTN_PAY:
             keyboard = [[BTN_PAY_NOW, BTN_PAY_PARTS], [BTN_PAY_DEBT], [BTN_BACK]]
-            await update.message.reply_text("💰 Обери спосіб оплати:",
-                reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True))
+            await update.message.reply_text(
+                "💰 Обери спосіб оплати:",
+                reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True),
+            )
             return
 
         if text == BTN_PAY_NOW:
@@ -484,8 +510,10 @@ async def on_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
         grant_access(uid, ACCESS_CODES[low])
         human = "24 години" if low == "hb24" else ("14 днів" if low == "hb14" else "10 хвилин")
 
-        await update.message.reply_text(f"Доступ активовано на {human}.",
-            reply_markup=main_menu(uid))
+        await update.message.reply_text(
+            f"Доступ активовано на {human}.",
+            reply_markup=main_menu(uid),
+        )
         return
 
     # --- Доступу нема ---
@@ -514,7 +542,7 @@ async def on_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # --- Друге повідомлення, якщо є дати ---
     if d1 and d2:
         confirmation = build_confirmation(
-            room_title, corpus, ad, kids, amount, d1, d2
+            room_title, corpus, ad, kids, amount, d1, d2,
         )
         await send_single_or_file(update, confirmation, "pidtverdzhennya.txt", uid)
 
@@ -529,13 +557,16 @@ def main():
         read_timeout=30,
         write_timeout=30,
         pool_timeout=30,
-        trust_env=False
+        trust_env=False,
     )
 
     app = Application.builder().token(TOKEN).request(request).build()
 
-    app.add_handler(CommandHandler("start", lambda u, c:
-        u.message.reply_text("👋 Вітаю! Я працюю.", reply_markup=main_menu(u.effective_user.id))
+    app.add_handler(CommandHandler(
+        "start",
+        lambda u, c: u.message.reply_text(
+            "👋 Вітаю! Я працюю.", reply_markup=main_menu(u.effective_user.id)
+        ),
     ))
 
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, on_text))
