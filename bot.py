@@ -175,7 +175,12 @@ def parse_ua_date(s: str):
         return None
 
 def extract_dates(text: str):
-    m = re.search(r"(\d{1,2}\s+\w+\s+\d{4})\s*-\s*(\d{1,2}\s+\w+\s+\d{4})", text, flags=re.I)
+    m = re.search(
+    r"(\d{1,2}\s+\w+\s+\d{4})\s*[–—-]\s*(\d{1,2}\s+\w+\s+\d{4})",
+    text,
+    flags=re.I
+)
+
     return (parse_ua_date(m.group(1)), parse_ua_date(m.group(2))) if m else (None, None)
 
 def extract_room_raw(text: str) -> str:
@@ -537,3 +542,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
