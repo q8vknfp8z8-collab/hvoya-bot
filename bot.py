@@ -444,7 +444,6 @@ def main():
         read_timeout=30,
         write_timeout=30,
         pool_timeout=30,
-        trust_env=False
     )
 
     app = Application.builder().token(TOKEN).request(request).build()
@@ -461,3 +460,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
